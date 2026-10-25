@@ -52,6 +52,13 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			// `exports` conditions are order-sensitive: "types" must come before "default".
+			"assist": { "actions": { "source": { "useSortedKeys": "off" } } },
+			"includes": ["package.json"]
+		}
+	],
 	"vcs": {
 		"clientKind": "git",
 		"defaultBranch": "main",

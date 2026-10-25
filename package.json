@@ -1,11 +1,9 @@
 {
 	"author": "cod3ddot@proton.me",
 	"dependencies": {
-		"@rolldown/pluginutils": "^1.0.0-rc.12",
-		"sharp": "^0.34.5",
 		"zod": "^4.6.7"
 	},
-	"description": "Rolldown plugin to fetch last song from Last.fm.",
+	"description": "Rolldown and Vite plugin that exposes your last Last.fm track, with cover art and streaming links, as a virtual module.",
 	"devDependencies": {
 		"@biomejs/biome": "2.6.3",
 		"@commitlint/config-conventional": "^21.2.4",
@@ -16,18 +14,24 @@
 		"tsdown": "^0.23.2",
 		"typescript": "^7.0.2"
 	},
+	"engines": {
+		"node": ">=22"
+	},
 	"exports": {
 		".": {
-			"import": {
-				"default": "./dist/index.mjs",
-				"types": "./dist/index.d.mts"
-			}
+			"types": "./dist/index.d.mts",
+			"default": "./dist/index.mjs"
+		},
+		"./client": {
+			"types": "./client.d.ts"
 		},
 		"./package.json": "./package.json"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"client.d.ts"
 	],
+	"homepage": "https://github.com/cod3ddot/rolldown-plugin-listening-to",
 	"keywords": [
 		"rolldown-plugin",
 		"vite-plugin",
@@ -38,16 +42,21 @@
 	"name": "rolldown-plugin-listening-to",
 	"packageManager": "bun@1.4.3",
 	"peerDependencies": {
-		"rolldown": "^1.0.0-rc.12"
+		"rolldown": "^1.0.0"
+	},
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/cod3ddot/rolldown-plugin-listening-to.git"
 	},
 	"scripts": {
 		"build": "tsdown",
-		"lint": "bunx biome check --write",
+		"lint": "biome check --write",
 		"test": "bun test",
 		"test:watch": "bun test --watch",
 		"typecheck": "tsc"
 	},
 	"type": "module",
 	"types": "./dist/index.d.mts",
-	"version": "0.1.0"
+	"version": "0.2.0"
 }
