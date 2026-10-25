@@ -18,7 +18,8 @@ precedence = "override"
 SPDX-FileCopyrightText = "2026 cod3ddot@proton.me"
 SPDX-License-Identifier = "CC0-1.0"
 
+# documentation
 [[annotations]]
-path = ["docs/**/*"]
+path = ["README.md", "CHANGES.md", "docs/**/*"]
 SPDX-FileCopyrightText = "2026 cod3ddot@proton.me"
 SPDX-License-Identifier = "CC-BY-NC-SA-4.0"
