@@ -26,9 +26,9 @@ Fetches the track you are playing (or played last), its cover art and links to i
 
 |              | Spotify | Apple Music | Deezer | YouTube | SoundCloud | Bandcamp |
 | ------------ | ------- | ----------- | ------ | ------- | ---------- | -------- |
-| ListenBrainz | [x]     | [x]         | []     | []      | []         | []       |
-| Deezer       | []      | []          | [x]    | []      | []         | []       |
-| Openwhyd *   | [x]     | []          | [x]    | [x]     | [x]        | [x]      |
+| ListenBrainz | ✓       | ✓           | –      | –       | –          | –        |
+| Deezer       | –       | –           | ✓      | –       | –          | –        |
+| Openwhyd *   | ✓       | –           | ✓      | ✓       | ✓          | ✓        |
 
 \* Links posted by [Openwhyd](https://openwhyd.org) users, so mostly YouTube, and only for songs someone posted.
 
