@@ -6,79 +6,72 @@
 
 // biome-ignore lint/performance/noNamespaceImport: preferred way
 import * as z from "zod/mini";
-import { fetchAndValidate } from "@/api/fetch.ts";
+import { type FetchOptions, fetchJson } from "@/api/fetch.ts";
 
-const LastFmImageSchema = z.object({
-	"#text": z.string(),
-	size: z.string()
-});
+const TextSchema = z.object({ "#text": z.string() });
 
 const LastFmTrackSchema = z.object({
-	album: z.object({ "#text": z.string() }),
-	artist: z.object({ "#text": z.string() }),
-	image: z.array(LastFmImageSchema),
-	mbid: z.string(),
-	name: z.string()
+	"@attr": z.optional(z.object({ nowplaying: z.optional(z.string()) })),
+	album: TextSchema,
+	artist: TextSchema,
+	date: z.optional(z.object({ uts: z.string() })),
+	image: z.optional(z.array(TextSchema)),
+	mbid: z.optional(z.string()),
+	name: z.string(),
+	url: z.string()
 });
 
-const LastFmUserResponseSchema = z.object({
+const LastFmRecentTracksSchema = z.object({
 	recenttracks: z.object({
-		track: z.array(LastFmTrackSchema)
+		// Last.fm has been known to send a bare object instead of a one-element array.
+		track: z.union([z.array(LastFmTrackSchema), LastFmTrackSchema])
 	})
 });
 
 export interface LastFmTrack {
-	mbid: string;
 	title: string;
 	artist: string;
 	album: string;
-	albumCover?: string;
+	url: string;
+	mbid: string | null;
+	nowPlaying: boolean;
+	playedAt: string | null;
+	/** Any size of the cover on the Last.fm CDN, or `null` when there is none. */
+	imageUrl: string | null;
 }
 
-export const getLastSong = async (key: string, user: string): Promise<LastFmTrack> => {
-	const params = new URLSearchParams({
-		api_key: key,
+/** Fetches the most recent scrobble (or the playing track) of `user`. Returns `null` if there is none. */
+export async function getLastTrack(
+	apiKey: string,
+	user: string,
+	options: FetchOptions
+): Promise<LastFmTrack | null> {
+	const url = new URL("https://ws.audioscrobbler.com/2.0/");
+	url.search = new URLSearchParams({
+		api_key: apiKey,
 		format: "json",
+		limit: "1",
 		method: "user.getrecenttracks",
 		user
-	});
-	const url = new URL("https://ws.audioscrobbler.com/2.0/");
+	}).toString();
 
-	url.search = params.toString();
+	const { recenttracks } = await fetchJson(url, LastFmRecentTracksSchema, options);
+	const track = Array.isArray(recenttracks.track) ? recenttracks.track[0] : recenttracks.track;
 
-	const userResponse = await fetchAndValidate(url, LastFmUserResponseSchema);
-
-	const emptyTrack: LastFmTrack = {
-		album: "",
-		artist: "",
-		mbid: "",
-		title: ""
-	};
-
-	if (!userResponse || userResponse?.recenttracks?.track?.length === 0) {
-		return emptyTrack;
+	if (!track) {
+		return null;
 	}
 
-	const lastTrack = userResponse.recenttracks.track[0];
-
-	if (!lastTrack) {
-		return emptyTrack;
-	}
-
-	let thumbnail = lastTrack.image?.[0]?.["#text"] || undefined;
-
-	// Filter out Last.fm placeholder image
-	if (
-		thumbnail === "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png"
-	) {
-		thumbnail = undefined;
-	}
+	const uts = Number(track.date?.uts);
 
 	return {
-		album: lastTrack.album["#text"],
-		albumCover: thumbnail,
-		artist: lastTrack.artist["#text"],
-		mbid: lastTrack.mbid,
-		title: lastTrack.name
+		album: track.album["#text"],
+		artist: track.artist["#text"],
+		imageUrl: track.image?.findLast((image) => image["#text"])?.["#text"] ?? null,
+		mbid: track.mbid || null,
+		nowPlaying: track["@attr"]?.nowplaying === "true",
+		playedAt: Number.isFinite(uts) ? new Date(uts * 1000).toISOString() : null,
+		title: track.name,
+		url: track.url
 	};
-};
+}
