@@ -6,70 +6,63 @@
 
 // biome-ignore lint/performance/noNamespaceImport: preferred way
 import * as z from "zod/mini";
-import { fetchAndValidate } from "@/api/fetch.ts";
-import type { StreamingServices } from "@/types.d.ts";
+import { type FetchOptions, fetchJson } from "@/api/fetch.ts";
+import type { StreamingServices, TrackQuery } from "@/types.ts";
+import { looselyMatches } from "@/util/match.ts";
 
-const OpenwhydTrackSchema = z.object({
-	eId: z.string(),
-	id: z.string(),
-	img: z.optional(z.string()),
-	name: z.string(),
-	url: z.optional(z.url())
-});
-
-const OpenwhydResponseSchema = z.object({
+const OpenwhydSearchSchema = z.object({
 	results: z.object({
-		posts: z.array(OpenwhydTrackSchema)
+		// Deleted posts come back as `null`.
+		posts: z.array(z.nullable(z.object({ eId: z.string(), name: z.string() })))
 	})
 });
 
-export async function openwhydStreamingServices(
-	title: string,
-	album: string,
-	artist: string
-): Promise<StreamingServices> {
-	const apiUrl = new URL("https://openwhyd.org/search");
-	apiUrl.searchParams.set("q", `${artist} ${title}`);
-	apiUrl.searchParams.set("format", "json");
+/** Captures the player and the ID of `/<player>/<id>#<stream URL>`. */
+const EID = /^\/([a-z]{2})\/([^#]+)/;
 
-	const data = await fetchAndValidate(apiUrl, OpenwhydResponseSchema);
-	if (!data || data?.results?.posts?.length === 0) {
+/** Turns an Openwhyd player ID (`/yt/<id>`, `/sc/<path>#<stream>`, …) into a public link. */
+export function eIdToService(eId: string): StreamingServices {
+	const [, player, id] = EID.exec(eId) ?? [];
+	if (!id) {
 		return {};
 	}
 
-	const services: StreamingServices = {};
-
-	for (const { eId } of data.results.posts) {
-		// Spotify
-		if (eId.startsWith("spotify:track:") && !services.spotify) {
-			const id = eId.split(":")[2];
-			services.spotify = `https://open.spotify.com/track/${id}`;
+	switch (player) {
+		case "yt":
+			return { youtube: `https://www.youtube.com/watch?v=${id}` };
+		case "sp":
+			return { spotify: `https://open.spotify.com/track/${id}` };
+		case "dz":
+			return { deezer: `https://www.deezer.com/track/${id}` };
+		case "sc":
+			return { soundcloud: `https://soundcloud.com/${id}` };
+		case "bc": {
+			const [band, track] = id.split("/");
+			return band && track ? { bandcamp: `https://${band}.bandcamp.com/track/${track}` } : {};
 		}
+		default:
+			return {};
+	}
+}
 
-		// YouTube
-		if (eId.startsWith("/yt/") && !services.youtube) {
-			const id = eId.slice(4);
-			services.youtube = `https://www.youtube.com/watch?v=${id}`;
-		}
+/** Links that Openwhyd users posted for the track. In practice mostly YouTube. */
+export async function openwhydStreamingServices(
+	{ title, artist }: TrackQuery,
+	options: FetchOptions
+): Promise<StreamingServices> {
+	const url = new URL("https://openwhyd.org/search");
+	url.searchParams.set("q", `${artist} ${title}`);
+	url.searchParams.set("format", "json");
 
-		// Deezer
-		if (eId.startsWith("/dz/") && !services.deezer) {
-			const id = eId.slice(4);
-			services.deezer = `https://www.deezer.com/track/${id}`;
-		}
+	const { results } = await fetchJson(url, OpenwhydSearchSchema, options);
 
-		// SoundCloud
-		if (eId.startsWith("/sc/") && !services.soundcloud) {
-			const id = eId.slice(4);
-			services.soundcloud = `https://soundcloud.com/${id}`;
-		}
-
-		// Bandcamp
-		if (eId.startsWith("/bc/") && !services.bandcamp) {
-			const id = eId.slice(4);
-			services.bandcamp = `https://bandcamp.com/${id}`;
+	// Post names are free text like "Artist - Title". Search is fuzzy, so skip unrelated posts.
+	let services: StreamingServices = {};
+	for (const post of results.posts) {
+		if (post && looselyMatches(post.name, title) && looselyMatches(post.name, artist)) {
+			// The first post wins per service.
+			services = { ...eIdToService(post.eId), ...services };
 		}
 	}
-
 	return services;
 }
