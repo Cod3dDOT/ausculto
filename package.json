@@ -3,17 +3,18 @@
 	"dependencies": {
 		"@rolldown/pluginutils": "^1.0.0-rc.12",
 		"sharp": "^0.34.5",
-		"zod": "^4.3.6"
+		"zod": "^4.6.7"
 	},
 	"description": "Rolldown plugin to fetch last song from Last.fm.",
 	"devDependencies": {
-		"@biomejs/biome": "2.4.9",
-		"@commitlint/config-conventional": "^20.5.0",
-		"@commitlint/types": "^20.5.0",
-		"@types/bun": "^1.3.11",
-		"lefthook": "^2.1.4",
-		"rolldown": "^1.0.0-rc.12",
-		"tsdown": "^0.21.5"
+		"@biomejs/biome": "2.6.3",
+		"@commitlint/config-conventional": "^21.2.4",
+		"@commitlint/types": "^21.2.3",
+		"@types/bun": "^1.4.4",
+		"lefthook": "^2.2.2",
+		"rolldown": "^1.2.15",
+		"tsdown": "^0.23.2",
+		"typescript": "^7.0.2"
 	},
 	"exports": {
 		".": {
@@ -35,6 +36,7 @@
 	],
 	"license": "MIT",
 	"name": "rolldown-plugin-listening-to",
+	"packageManager": "bun@1.4.3",
 	"peerDependencies": {
 		"rolldown": "^1.0.0-rc.12"
 	},
@@ -42,7 +44,8 @@
 		"build": "tsdown",
 		"lint": "bunx biome check --write",
 		"test": "bun test",
-		"test:watch": "bun test --watch"
+		"test:watch": "bun test --watch",
+		"typecheck": "tsc"
 	},
 	"type": "module",
 	"types": "./dist/index.d.mts",

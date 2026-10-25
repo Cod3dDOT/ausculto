@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.4.9/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
 	"assist": {
 		"actions": {
 			"source": {
@@ -37,18 +37,18 @@
 			"a11y": "on",
 			"complexity": "on",
 			"correctness": {
-				"recommended": true,
+				"preset": "recommended",
 				"useQwikValidLexicalScope": "off"
 			},
 			"performance": "on",
 			"security": "on",
 			"style": {
 				"noMagicNumbers": "off",
-				"recommended": true
+				"preset": "recommended"
 			},
 			"suspicious": {
 				"noConsole": "off",
-				"recommended": true
+				"preset": "recommended"
 			}
 		}
 	},
