@@ -2,12 +2,6 @@ version = 1
 SPDX-PackageName = "rolldown-plugin-listening-to"
 SPDX-PackageSupplier = "https://github.com/cod3ddot/rolldown-plugin-listening-to"
 
-[[annotations]]
-path = ["dist/**/*"]
-SPDX-FileCopyrightText = "2026 cod3ddot@proton.me"
-SPDX-License-Identifier = "MIT"
-
-
 # configs
 [[annotations]]
 path = [

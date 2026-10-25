@@ -3,22 +3,21 @@
 # SPDX-License-Identifier: MIT
 
 pre-commit:
-    parallel: true
-    commands:
-        lint:
-            glob: "*.{js,mjs,ts,astro}"
-            run: bun run lint {staged_files}
-        reuse:
-            run: reuse lint
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{js,mjs,ts,json,jsonc,yml}"
+      run: bunx biome check --write --no-errors-on-unmatched {staged_files}
+    reuse:
+      run: reuse lint
 commit-msg:
-    commands:
-        "lint commit message":
-            run: bunx commitlint --edit {1}
+  commands:
+    "lint commit message":
+      run: bunx commitlint --edit {1}
 pre-push:
-    commands:
-        lint:
-            glob: "*.{js,ts,mjs,jsx,tsx,css,scss}"
-            run: bun run lint {push_files}
-        build:
-            run: bun run build
-            stage_fixed: true
+  parallel: true
+  commands:
+    typecheck:
+      run: bun run typecheck
+    test:
+      run: bun test
