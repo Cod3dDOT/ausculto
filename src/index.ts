@@ -5,7 +5,7 @@
  */
 
 // biome-ignore lint/performance/noBarrelFile: library entry point, not an app barrel
-export { createPlugin as RolldownPluginListeningTo } from "@/plugin.ts";
+export { createPlugin as ausculto, createPlugin as default } from "@/plugin.ts";
 export type {
 	CoverSize,
 	LastFmPluginOptions,

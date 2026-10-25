@@ -9,8 +9,7 @@ import * as z from "zod/mini";
 
 z.config(z.locales.en());
 
-const USER_AGENT =
-	"rolldown-plugin-listening-to (+https://github.com/cod3ddot/rolldown-plugin-listening-to)";
+const USER_AGENT = "ausculto (+https://github.com/cod3ddot/ausculto)";
 
 export interface FetchOptions {
 	/** Request timeout, in milliseconds. */

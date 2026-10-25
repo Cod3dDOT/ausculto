@@ -1,6 +1,6 @@
 version = 1
-SPDX-PackageName = "rolldown-plugin-listening-to"
-SPDX-PackageSupplier = "https://github.com/cod3ddot/rolldown-plugin-listening-to"
+SPDX-PackageName = "ausculto"
+SPDX-PackageSupplier = "https://github.com/cod3ddot/ausculto"
 
 # configs
 [[annotations]]

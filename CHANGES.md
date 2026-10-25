@@ -5,46 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-10-24
+## [0.1.0] - 2026-10-24
 
-Cleanup: everything works without API keys besides Last.fm's, the build no longer fails when an API does, and the package is a lot smaller.
+First release. The project was previously developed, but never released, as `rolldown-plugin-listening-to`.
 
 ### Added
 
-- `nowPlaying`, `playedAt`, `url` and `mbid` on `MusicTrack`
-- `cover` with an inlined WebP `thumbnail` and a `url` to the full cover, with `thumbnailSize` (34, 64, 174) and `coverSize` (300, 770) options
-- Deezer provider
-- `timeout` option for HTTP requests (default 10 s)
-- `rolldown-plugin-listening-to/client` types for the virtual module
-- Releases are built in CI and attached to GitHub releases
+- `virtual:ausculto` module exporting the last Last.fm track of a user, or `null`
+- Track fields: title, artist, album, Last.fm `url`, `mbid`, `nowPlaying` and `playedAt`
+- `cover` with an inlined WebP `thumbnail` and a `url` to the full cover, sized with `thumbnailSize` (34, 64, 174) and `coverSize` (300, 770)
+- Streaming links from ListenBrainz (Spotify, Apple Music), Deezer and Openwhyd (mostly YouTube), none of which need an API key
+- `cacheTTL` and `timeout` options
+- `ausculto/client` types for the virtual module
+- Release tarballs built in CI and attached to GitHub releases
 
-### Changed
+### Migrating from rolldown-plugin-listening-to
 
-- **Breaking:** `albumCover` is replaced by `cover`
-- **Breaking:** the `musicbrainz` provider is renamed to `listenbrainz`, which is the service it queries
-- **Breaking:** `musicTrack` is `null` when Last.fm fails, instead of failing the build. A previously fetched track is used if there is one
-- Concurrent loads (e.g. Vite's client and SSR builds) share one request
-- Normal progress is logged as info and debug instead of warnings
-- Apple Music links no longer force the US storefront
-- Requests send a User-Agent
-
-### Removed
-
-- **Breaking:** Odesli provider, its public API was retired on 2026-07-31
-- `sharp` dependency: Last.fm resizes and converts covers itself
-- `@rolldown/pluginutils` dependency
-- `dist/` is no longer committed
-
-### Fixed
-
-- Openwhyd never returned links: responses always failed validation
-- Openwhyd Spotify, Bandcamp, SoundCloud and Deezer links were built from the wrong ID formats
-- Openwhyd and Deezer results by other artists or for other songs are skipped
-- Album covers were upscaled from Last.fm's 34 px thumbnail
-- Last.fm's placeholder was only filtered at one size
-- API keys could end up in build logs through error messages
-- The virtual module types shipped in the bundle did not take effect
-
-## [0.1.0] - 2026-03-26
-
-Initial release.
+- Import `ausculto` (or the default export) from `ausculto` instead of `RolldownPluginListeningTo` from `rolldown-plugin-listening-to`
+- Import from `virtual:ausculto` instead of `virtual:rolldown-plugin-listening-to`, and reference `ausculto/client` for its types
+- `albumCover` is now `cover.thumbnail`
+- `musicTrack` can be `null`: when Last.fm fails, the build continues and uses the previous track if there is one
+- The `musicbrainz` provider is now `listenbrainz`, and `odesli` is gone: its public API was retired on 2026-07-31
+- `sharp` is no longer a dependency

@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "vite_listening_to",
+      "name": "ausculto",
       "dependencies": {
         "zod": "^4.6.7",
       },

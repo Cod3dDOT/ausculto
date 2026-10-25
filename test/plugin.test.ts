@@ -9,7 +9,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import type { MusicTrack } from "../src/types.ts";
 
-const VIRTUAL_ID = "virtual:rolldown-plugin-listening-to";
+const VIRTUAL_ID = "virtual:ausculto";
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
 const MODULE_PREFIX = /^export const musicTrack = /;
 const MODULE_SUFFIX = /;\s*$/;
@@ -121,7 +121,7 @@ describe("createPlugin", () => {
 
 	describe("hooks", () => {
 		it("has the correct plugin name", () => {
-			expect(makePlugin().name).toBe("rolldown-plugin-listening-to");
+			expect(makePlugin().name).toBe("ausculto");
 		});
 
 		it("resolves the virtual module ID", () => {

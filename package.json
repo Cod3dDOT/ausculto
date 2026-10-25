@@ -31,7 +31,7 @@
 		"dist",
 		"client.d.ts"
 	],
-	"homepage": "https://github.com/cod3ddot/rolldown-plugin-listening-to",
+	"homepage": "https://github.com/cod3ddot/ausculto",
 	"keywords": [
 		"rolldown-plugin",
 		"vite-plugin",
@@ -39,7 +39,7 @@
 		"music"
 	],
 	"license": "MIT",
-	"name": "rolldown-plugin-listening-to",
+	"name": "ausculto",
 	"packageManager": "bun@1.4.3",
 	"peerDependencies": {
 		"rolldown": "^1.0.0"
@@ -47,7 +47,7 @@
 	"private": true,
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cod3ddot/rolldown-plugin-listening-to.git"
+		"url": "git+https://github.com/cod3ddot/ausculto.git"
 	},
 	"scripts": {
 		"build": "tsdown",
@@ -58,5 +58,5 @@
 	},
 	"type": "module",
 	"types": "./dist/index.d.mts",
-	"version": "0.2.0"
+	"version": "0.1.0"
 }

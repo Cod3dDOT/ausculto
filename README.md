@@ -1,12 +1,12 @@
-[![rolldown-plugin-listening-to](./docs/github-header.gif)](https://github.com/cod3ddot/rolldown-plugin-listening-to)
+[![ausculto](./docs/github-header.gif)](https://github.com/cod3ddot/ausculto)
 
 <div align="center">
   <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License: MIT" />
   </a>
 
-  <a href="https://github.com/cod3ddot/rolldown-plugin-listening-to/releases">
-    <img src="https://img.shields.io/github/v/tag/cod3ddot/rolldown-plugin-listening-to?label=version&style=for-the-badge&color=blue&logo=git&logoColor=white" alt="Version" />
+  <a href="https://github.com/cod3ddot/ausculto/releases">
+    <img src="https://img.shields.io/github/v/tag/cod3ddot/ausculto?label=version&style=for-the-badge&color=blue&logo=git&logoColor=white" alt="Version" />
   </a>
 
   <a href="https://www.typescriptlang.org">
@@ -14,7 +14,9 @@
   </a>
 </div>
 
-# rolldown-plugin-listening-to
+# ausculto
+
+_Latin: "I listen"._
 
 [Rolldown](https://rolldown.rs) and [Vite](https://vite.dev) plugin that puts your last [Last.fm](https://www.last.fm) track into your site at build time.
 
@@ -40,17 +42,17 @@ When several providers find the same service, the one listed first in `providers
 
 ## Quick Setup
 
-The package is not on npm. Install it from a [release](https://github.com/cod3ddot/rolldown-plugin-listening-to/releases):
+The package is not on npm. Install it from a [release](https://github.com/cod3ddot/ausculto/releases):
 
 ```bash
-bun add https://github.com/cod3ddot/rolldown-plugin-listening-to/releases/download/v0.2.0/rolldown-plugin-listening-to-0.2.0.tgz
+bun add https://github.com/cod3ddot/ausculto/releases/download/v0.1.0/ausculto-0.1.0.tgz
 ```
 
 Or build it yourself (needs [Bun](https://bun.sh)):
 
 ```bash
-git clone https://github.com/cod3ddot/rolldown-plugin-listening-to
-cd rolldown-plugin-listening-to
+git clone https://github.com/cod3ddot/ausculto
+cd ausculto
 bun install
 bun run build    # outputs to dist/
 bun pm pack      # creates the .tgz to install
@@ -88,13 +90,13 @@ bun pm pack      # creates the .tgz to install
    ```ts
    // vite.config.ts (or rolldown.config.ts)
    import { defineConfig, loadEnv } from "vite";
-   import { RolldownPluginListeningTo } from "rolldown-plugin-listening-to";
+   import { ausculto } from "ausculto";
 
    const env = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
 
    export default defineConfig({
    	plugins: [
-   		RolldownPluginListeningTo({
+   		ausculto({
    			apiKey: env.LASTFM_KEY,
    			userId: env.LASTFM_USER
    		})
@@ -107,13 +109,13 @@ bun pm pack      # creates the .tgz to install
 2. Add the types of the virtual module to any `.d.ts` in your project, like `env.d.ts`:
 
    ```ts
-   /// <reference types="rolldown-plugin-listening-to/client" />
+   /// <reference types="ausculto/client" />
    ```
 
 3. Import the track:
 
    ```ts
-   import { musicTrack } from "virtual:rolldown-plugin-listening-to";
+   import { musicTrack } from "virtual:ausculto";
 
    if (musicTrack) {
    	console.log(`${musicTrack.nowPlaying ? "Listening to" : "Last listened to"} ${musicTrack.title}`);
@@ -180,7 +182,7 @@ Generally:
 - Config files are under CC0-1.0
 
 ```
-    rolldown-plugin-listening-to: your last Last.fm track in your site
+    ausculto: your last Last.fm track in your site
     Copyright (C) 2026  cod3ddot@proton.me
 
     Permission is hereby granted, free of charge, to any person obtaining a copy

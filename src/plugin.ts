@@ -14,7 +14,7 @@ import type {
 } from "@/types.ts";
 import { Cache } from "@/util/cache.ts";
 
-const VIRTUAL_MODULE_ID = "virtual:rolldown-plugin-listening-to";
+const VIRTUAL_MODULE_ID = "virtual:ausculto";
 const RESOLVED_VIRTUAL_MODULE_ID = `\0${VIRTUAL_MODULE_ID}`;
 
 const ALL_PROVIDERS: readonly StreamingServiceProvider[] = ["listenbrainz", "deezer", "openwhyd"];
@@ -95,7 +95,7 @@ export function createPlugin(options: LastFmPluginOptions): Plugin {
 				return `export const musicTrack = ${JSON.stringify(track, null, "\t")};\n`;
 			}
 		},
-		name: "rolldown-plugin-listening-to",
+		name: "ausculto",
 		resolveId: {
 			filter: { id: new RegExp(`^${VIRTUAL_MODULE_ID}$`) },
 			handler() {
