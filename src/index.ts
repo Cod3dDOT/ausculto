@@ -6,10 +6,12 @@
 
 // biome-ignore lint/performance/noBarrelFile: library entry point, not an app barrel
 export { createPlugin as RolldownPluginListeningTo } from "@/plugin.ts";
-export type { GetStreamingServicesConfig } from "@/streamingServices.ts";
 export type {
+	CoverSize,
 	LastFmPluginOptions,
+	MusicCover,
 	MusicTrack,
 	StreamingServiceProvider,
-	StreamingServices
-} from "@/types.d.ts";
+	StreamingServices,
+	ThumbnailSize
+} from "@/types.ts";
