@@ -3,7 +3,7 @@
 	"dependencies": {
 		"zod": "^4.6.7"
 	},
-	"description": "Rolldown and Vite plugin that exposes your last Last.fm track, with cover art and streaming links, as a virtual module.",
+	"description": "Your last Last.fm track, cover art and streaming links as a Vite/Rolldown virtual module.",
 	"devDependencies": {
 		"@biomejs/biome": "2.6.3",
 		"@commitlint/config-conventional": "^21.2.4",
@@ -35,8 +35,13 @@
 	"keywords": [
 		"rolldown-plugin",
 		"vite-plugin",
+		"rolldown",
+		"vite",
 		"lastfm",
-		"music"
+		"now-playing",
+		"scrobbling",
+		"music",
+		"astro"
 	],
 	"license": "MIT",
 	"name": "ausculto",
