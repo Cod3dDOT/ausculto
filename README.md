@@ -1,3 +1,5 @@
+[![rolldown-plugin-listening-to](./docs/github-header.gif)](https://github.com/cod3ddot/rolldown-plugin-listening-to)
+
 <div align="center">
   <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License: MIT" />
