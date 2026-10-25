@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-// biome-ignore lint/correctness/noUnresolvedImports: bun built-in module
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Cache } from "../src/util/cache.ts";
 
@@ -167,5 +166,29 @@ describe("Cache: TTL variations", () => {
 
 		advanceTime(1);
 		expect(cache.get()).toBeNull();
+	});
+});
+
+describe("Cache: stale", () => {
+	const { advanceTime } = setupTimeMock();
+
+	it("returns null when cache is empty", () => {
+		expect(new Cache<string>(5000).stale()).toBeNull();
+	});
+
+	it("returns the value after TTL expires", () => {
+		const cache = new Cache<string>(5000);
+		cache.set("test data");
+
+		advanceTime(5001);
+		expect(cache.get()).toBeNull();
+		expect(cache.stale()).toBe("test data");
+	});
+
+	it("returns null after clear", () => {
+		const cache = new Cache<string>(5000);
+		cache.set("test data");
+		cache.clear();
+		expect(cache.stale()).toBeNull();
 	});
 });

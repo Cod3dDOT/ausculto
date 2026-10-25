@@ -6,310 +6,242 @@
 
 // biome-ignore-all lint/complexity/noExcessiveLinesPerFunction: tests
 
-// biome-ignore lint/correctness/noUnresolvedImports: bun built-in module
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-
-import type { MusicTrack } from "../src/types.d.ts";
+import type { MusicTrack } from "../src/types.ts";
 
 const VIRTUAL_ID = "virtual:rolldown-plugin-listening-to";
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
+const MODULE_PREFIX = /^export const musicTrack = /;
+const MODULE_SUFFIX = /;\s*$/;
 
-// ─── Mocks ───────────────────────────────────────────────────────────────────
+const mockFetchMusicTrack = mock((): Promise<MusicTrack | null> => Promise.resolve(null));
 
-const mockFetchMusicTrack = mock(() => Promise.resolve({} as MusicTrack));
+mock.module("../src/api/index.ts", () => ({ fetchMusicTrack: mockFetchMusicTrack }));
 
-mock.module("../src/api/index.ts", () => ({
-	fetchMusicTrack: mockFetchMusicTrack
-}));
+const { createPlugin } = await import("../src/plugin.ts");
 
-// Minimal plugin context — only the hooks we actually call
 const pluginContext = {
-	error: mock((_msg: string): never => {
-		throw new Error(_msg);
-	}),
+	debug: mock((_msg: string) => {}),
+	info: mock((_msg: string) => {}),
 	warn: mock((_msg: string) => {})
-	// biome-ignore lint/suspicious/noExplicitAny: again, its complicated
-} as any;
-
-// ─── Fixtures ────────────────────────────────────────────────────────────────
+};
 
 const mockTrack: MusicTrack = {
 	album: "Test Album",
-	albumCover: "data:image/webp;base64,test",
 	artist: "Test Artist",
+	cover: {
+		size: 300,
+		thumbnail: "data:image/webp;base64,test",
+		url: "https://lastfm.freetls.fastly.net/i/u/300x300/abc.jpg"
+	},
+	mbid: null,
+	nowPlaying: false,
+	playedAt: "2026-10-24T12:00:00.000Z",
 	services: {},
-	title: "Test Song"
+	title: "Test Song",
+	url: "https://www.last.fm/music/Test+Artist/_/Test+Song"
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+type PluginOptions = Parameters<typeof createPlugin>[0];
 
-import { createPlugin } from "../src/plugin.ts";
-
-function makePlugin(overrides: Partial<Parameters<typeof createPlugin>[0]> = {}) {
+function makePlugin(overrides: Partial<PluginOptions> = {}) {
 	return createPlugin({ apiKey: "testkey", userId: "testuser", ...overrides });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: its complicated
-function matchesFilter(filter: any, id: string) {
-	if (!filter) return true;
+type HookWithFilter = { filter: { id: RegExp }; handler: (...args: unknown[]) => unknown };
 
-	if (filter.id instanceof RegExp) {
-		return filter.id.test(id);
-	}
-
-	// fallback (future-proofing)
-	if (typeof filter.id === "function") {
-		return filter.id(id);
-	}
-
-	return true;
+/** Calls a filtered hook the way Rolldown does: only when the filter matches. */
+function callHook(hook: unknown, id: string) {
+	const { filter, handler } = hook as HookWithFilter;
+	return filter.id.test(id) ? handler.call(pluginContext, id) : undefined;
 }
 
-async function load(plugin: ReturnType<typeof makePlugin>, id: string) {
-	const hook = plugin.load;
+const load = (plugin: ReturnType<typeof makePlugin>, id = RESOLVED_ID) =>
+	callHook(plugin.load, id) as Promise<string> | undefined;
 
-	if (!hook) return;
-
-	// Vite-style
-	if (typeof hook === "function") {
-		return hook.call(pluginContext, id);
-	}
-
-	// Rolldown-style
-	if (typeof hook === "object" && "handler" in hook) {
-		if (!matchesFilter(hook.filter, id)) {
-			return;
-		}
-		return hook.handler.call(pluginContext, id);
-	}
-
-	return;
+async function loadTrack(plugin: ReturnType<typeof makePlugin>): Promise<MusicTrack | null> {
+	const code = (await load(plugin)) ?? "";
+	return JSON.parse(code.replace(MODULE_PREFIX, "").replace(MODULE_SUFFIX, ""));
 }
-
-function resolveId(plugin: ReturnType<typeof makePlugin>, id: string) {
-	const hook = plugin.resolveId;
-
-	if (!hook) return;
-
-	// Vite-style
-	if (typeof hook === "function") {
-		return hook.call(pluginContext, id, "", { isEntry: false, kind: "dynamic-import" });
-	}
-
-	// Rolldown-style
-	if (typeof hook === "object" && "handler" in hook) {
-		if (!matchesFilter(hook.filter, id)) {
-			return;
-		}
-		return hook.handler.call(pluginContext, id, "", { isEntry: false, kind: "dynamic-import" });
-	}
-
-	return;
-}
-
-function parseResult(result: string | undefined | null) {
-	if (!result) return null;
-	// Strip `export const musicTrack = ` prefix and trailing `;`
-	const json = result.replace(/^export const musicTrack[^=]+=\s*/, "").replace(/;\s*$/, "");
-	return JSON.parse(json) as MusicTrack;
-}
-
-// ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe("createPlugin", () => {
 	beforeEach(() => {
 		mockFetchMusicTrack.mockReset();
-		pluginContext.warn.mockReset();
-		pluginContext.error.mockReset();
+		mockFetchMusicTrack.mockResolvedValue(mockTrack);
+		for (const log of Object.values(pluginContext)) {
+			log.mockReset();
+		}
 	});
 
-	// ── Options validation ───────────────────────────────────────────────────
-
-	describe("options validation", () => {
+	describe("options", () => {
 		it("throws when apiKey is missing", () => {
-			expect(() => createPlugin({ apiKey: "", userId: "testuser" })).toThrow(
-				"API key and user ID must be specified"
-			);
+			expect(() => makePlugin({ apiKey: "" })).toThrow("API key and user ID must be specified");
 		});
 
 		it("throws when userId is missing", () => {
-			expect(() => createPlugin({ apiKey: "testkey", userId: "" })).toThrow(
-				"API key and user ID must be specified"
+			expect(() => makePlugin({ userId: "" })).toThrow("API key and user ID must be specified");
+		});
+
+		it("throws on unknown providers", () => {
+			// @ts-expect-error removed provider
+			expect(() => makePlugin({ providers: ["odesli"] })).toThrow("Unknown providers: odesli");
+		});
+
+		it("throws on sizes Last.fm does not serve", () => {
+			// @ts-expect-error invalid size
+			expect(() => makePlugin({ thumbnailSize: 50 })).toThrow("thumbnailSize");
+			// @ts-expect-error invalid size
+			expect(() => makePlugin({ coverSize: 500 })).toThrow("coverSize");
+		});
+
+		it("passes defaults to the fetcher", async () => {
+			await load(makePlugin());
+			expect(mockFetchMusicTrack).toHaveBeenCalledWith(
+				{
+					apiKey: "testkey",
+					cacheTTL: 300_000,
+					coverSize: 300,
+					providers: ["listenbrainz", "deezer", "openwhyd"],
+					thumbnailSize: 64,
+					timeout: 10_000,
+					userId: "testuser"
+				},
+				expect.any(Function)
 			);
 		});
 
-		it("accepts valid options with default TTL", () => {
-			expect(() => makePlugin()).not.toThrow();
-		});
-
-		it("accepts a custom cacheTTL", () => {
-			expect(() => makePlugin({ cacheTTL: 10_000 })).not.toThrow();
+		it("deduplicates providers", async () => {
+			await load(makePlugin({ providers: ["deezer", "deezer"] }));
+			expect(mockFetchMusicTrack).toHaveBeenCalledWith(
+				expect.objectContaining({ providers: ["deezer"] }),
+				expect.any(Function)
+			);
 		});
 	});
 
-	// ── Plugin metadata ──────────────────────────────────────────────────────
-
-	describe("plugin metadata", () => {
+	describe("hooks", () => {
 		it("has the correct plugin name", () => {
 			expect(makePlugin().name).toBe("rolldown-plugin-listening-to");
 		});
-	});
 
-	// ── resolveId ────────────────────────────────────────────────────────────
-
-	describe("resolveId", () => {
 		it("resolves the virtual module ID", () => {
-			expect(resolveId(makePlugin(), VIRTUAL_ID)).toBe(RESOLVED_ID);
+			expect(callHook(makePlugin().resolveId, VIRTUAL_ID)).toBe(RESOLVED_ID);
 		});
 
-		it("returns undefined for unknown IDs", () => {
-			expect(resolveId(makePlugin(), "some-other-module")).toBeUndefined();
+		it("ignores other IDs", () => {
+			const plugin = makePlugin();
+			expect(callHook(plugin.resolveId, "some-other-module")).toBeUndefined();
+			expect(callHook(plugin.resolveId, `${VIRTUAL_ID}-suffix`)).toBeUndefined();
+			expect(load(plugin, "\0some-other-module")).toBeUndefined();
 		});
 	});
-
-	// ── load ─────────────────────────────────────────────────────────────────
 
 	describe("load", () => {
-		it("returns undefined for non-virtual modules", async () => {
-			expect(await load(makePlugin(), "\0some-other-module")).toBeUndefined();
+		it("returns an ES module", async () => {
+			expect(await load(makePlugin())).toMatch(MODULE_PREFIX);
 		});
 
-		it("fetches track data on first load", async () => {
-			mockFetchMusicTrack.mockResolvedValue(mockTrack);
-			const plugin = makePlugin();
-
-			await load(plugin, RESOLVED_ID);
-
-			expect(mockFetchMusicTrack).toHaveBeenCalledWith("testkey", "testuser", expect.anything());
-			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(1);
+		it("serializes the track", async () => {
+			expect(await loadTrack(makePlugin())).toEqual(mockTrack);
 		});
 
-		it("returns a valid ES module string", async () => {
-			mockFetchMusicTrack.mockResolvedValue(mockTrack);
-			const result = await load(makePlugin(), RESOLVED_ID);
-
-			expect(result).toMatch(/^export const musicTrack/);
-		});
-
-		it("serializes the track correctly", async () => {
-			mockFetchMusicTrack.mockResolvedValue(mockTrack);
-			const result = await load(makePlugin(), RESOLVED_ID);
-			const parsed = parseResult(result as string);
-
-			expect(parsed).toEqual(mockTrack);
-		});
-
-		it("handles null albumCover", async () => {
-			mockFetchMusicTrack.mockResolvedValue({ ...mockTrack, albumCover: null });
-			const result = await load(makePlugin(), RESOLVED_ID);
-			const parsed = parseResult(result as string);
-
-			expect(parsed?.albumCover).toBeNull();
-		});
-
-		it("handles empty services", async () => {
-			mockFetchMusicTrack.mockResolvedValue({ ...mockTrack, services: {} });
-			const result = await load(makePlugin(), RESOLVED_ID);
-			const parsed = parseResult(result as string);
-
-			expect(parsed?.services).toEqual({});
-		});
-
-		it("serializes streaming service URLs correctly", async () => {
-			const services = {
-				apple: "https://music.apple.com/track/456",
-				spotify: "https://open.spotify.com/track/123"
-			};
-			mockFetchMusicTrack.mockResolvedValue({ ...mockTrack, services });
-			const result = await load(makePlugin(), RESOLVED_ID);
-			const parsed = parseResult(result as string);
-
-			expect(parsed?.services).toEqual(services);
-		});
-
-		it("safely round-trips special characters via JSON", async () => {
+		it("round-trips special and unicode characters", async () => {
 			const track = {
 				...mockTrack,
 				album: "Album\nWith\tSpecial Chars",
-				artist: "Artist & The Band",
-				title: `Song with "quotes" and 'apostrophes'`
+				artist: "Артист & The Band",
+				title: `Song with "quotes", 'apostrophes' and 音楽 🎵`
 			};
 			mockFetchMusicTrack.mockResolvedValue(track);
-			const result = await load(makePlugin(), RESOLVED_ID);
-			const parsed = parseResult(result as string);
-
-			expect(parsed).toEqual(track);
+			expect(await loadTrack(makePlugin())).toEqual(track);
 		});
 
-		it("safely round-trips unicode characters", async () => {
-			const track = { ...mockTrack, artist: "Артист", title: "Song 音楽 🎵" };
-			mockFetchMusicTrack.mockResolvedValue(track);
-			const result = await load(makePlugin(), RESOLVED_ID);
-			const parsed = parseResult(result as string);
+		it("exports null when the user has no scrobbles", async () => {
+			mockFetchMusicTrack.mockResolvedValue(null);
+			expect(await loadTrack(makePlugin())).toBeNull();
+		});
 
-			expect(parsed).toEqual(track);
+		it("forwards provider warnings to the plugin context", async () => {
+			mockFetchMusicTrack.mockImplementation((...args: unknown[]) => {
+				(args[1] as (message: string) => void)("deezer failed: boom");
+				return Promise.resolve(mockTrack);
+			});
+			await load(makePlugin());
+			expect(pluginContext.warn).toHaveBeenCalledWith("deezer failed: boom");
 		});
 	});
 
-	// ── Caching ──────────────────────────────────────────────────────────────
+	describe("failures", () => {
+		it("exports null and warns instead of failing the build", async () => {
+			mockFetchMusicTrack.mockRejectedValue(new Error("Network error"));
 
-	describe("caching", () => {
-		it("uses cached track on subsequent loads", async () => {
-			mockFetchMusicTrack.mockResolvedValue(mockTrack);
+			expect(await loadTrack(makePlugin())).toBeNull();
+			expect(pluginContext.warn).toHaveBeenCalledWith(
+				"could not fetch from Last.fm, exporting null: Network error"
+			);
+		});
+
+		it("falls back to the previous track once the cache expired", async () => {
+			const plugin = makePlugin({ cacheTTL: 0 });
+			await load(plugin);
+			await Bun.sleep(5);
+
+			mockFetchMusicTrack.mockRejectedValue(new Error("Network error"));
+			expect(await loadTrack(plugin)).toEqual(mockTrack);
+			expect(pluginContext.warn).toHaveBeenCalledWith(
+				"could not fetch from Last.fm, using the previous track: Network error"
+			);
+		});
+
+		it("does not cache failures", async () => {
+			mockFetchMusicTrack.mockRejectedValueOnce(new Error("Network error"));
 			const plugin = makePlugin();
 
-			await load(plugin, RESOLVED_ID);
-			await load(plugin, RESOLVED_ID);
-			await load(plugin, RESOLVED_ID);
+			expect(await loadTrack(plugin)).toBeNull();
+			expect(await loadTrack(plugin)).toEqual(mockTrack);
+			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(2);
+		});
+	});
 
+	describe("caching", () => {
+		it("reuses the track within the TTL", async () => {
+			const plugin = makePlugin();
+			await load(plugin);
+			await load(plugin);
+			await load(plugin);
+			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(1);
+		});
+
+		it("caches users without scrobbles too", async () => {
+			mockFetchMusicTrack.mockResolvedValue(null);
+			const plugin = makePlugin();
+			await load(plugin);
+			await load(plugin);
 			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(1);
 		});
 
 		it("refetches after the TTL expires", async () => {
-			mockFetchMusicTrack.mockResolvedValue(mockTrack);
-			const plugin = makePlugin({ cacheTTL: 100 });
-
-			await load(plugin, RESOLVED_ID);
-			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(1);
-
-			await new Promise((resolve) => setTimeout(resolve, 150));
-
-			await load(plugin, RESOLVED_ID);
+			const plugin = makePlugin({ cacheTTL: 10 });
+			await load(plugin);
+			await Bun.sleep(20);
+			await load(plugin);
 			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(2);
 		});
 
-		it("does not cache failed fetches", async () => {
-			mockFetchMusicTrack
-				.mockRejectedValueOnce(new Error("Network error"))
-				.mockResolvedValueOnce(mockTrack);
-
+		it("shares one request between concurrent loads", async () => {
 			const plugin = makePlugin();
-
-			expect(load(plugin, RESOLVED_ID)).rejects.toThrow("Network error");
-
-			const result = await load(plugin, RESOLVED_ID);
-			expect(parseResult(result as string)).toEqual(mockTrack);
-			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(2);
+			const tracks = await Promise.all([loadTrack(plugin), loadTrack(plugin)]);
+			expect(tracks).toEqual([mockTrack, mockTrack]);
+			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(1);
 		});
-	});
 
-	// ── Multiple instances ───────────────────────────────────────────────────
+		it("keeps separate caches per instance", async () => {
+			mockFetchMusicTrack
+				.mockResolvedValueOnce({ ...mockTrack, title: "Song 1" })
+				.mockResolvedValueOnce({ ...mockTrack, title: "Song 2" });
 
-	describe("multiple instances", () => {
-		it("maintains separate caches per instance", async () => {
-			const track1 = { ...mockTrack, title: "Song 1" };
-			const track2 = { ...mockTrack, title: "Song 2" };
-			mockFetchMusicTrack.mockResolvedValueOnce(track1).mockResolvedValueOnce(track2);
-
-			const plugin1 = createPlugin({ apiKey: "key1", userId: "user1" });
-			const plugin2 = createPlugin({ apiKey: "key2", userId: "user2" });
-
-			const result1 = parseResult((await load(plugin1, RESOLVED_ID)) as string);
-			const result2 = parseResult((await load(plugin2, RESOLVED_ID)) as string);
-
-			expect(result1?.title).toBe("Song 1");
-			expect(result2?.title).toBe("Song 2");
-			expect(mockFetchMusicTrack).toHaveBeenCalledTimes(2);
+			expect((await loadTrack(makePlugin()))?.title).toBe("Song 1");
+			expect((await loadTrack(makePlugin()))?.title).toBe("Song 2");
 		});
 	});
 });
