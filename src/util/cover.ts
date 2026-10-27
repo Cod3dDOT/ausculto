@@ -18,6 +18,16 @@ const LASTFM_IMAGE = /\/i\/u\/[^/]+\/([0-9a-f]+)(\.[a-z]+)?$/i;
 
 const COVER_SEGMENT: Record<CoverSize, string> = { 300: "300x300", 770: "770x0" };
 
+/** Base64 with `btoa` rather than Node's `Buffer`, so covers also work in browsers and edge workers. */
+export function toBase64(bytes: Uint8Array): string {
+	let binary = "";
+	// Chunked: spreading a whole image into one call can overflow the argument limit.
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(binary);
+}
+
 export interface CoverOptions extends FetchOptions {
 	thumbnailSize: ThumbnailSize;
 	coverSize: CoverSize;
@@ -40,7 +50,7 @@ export async function getCover(
 	}
 
 	const res = await fetchOk(`${CDN}/${thumbnailSize}s/${hash}.webp`, { timeout });
-	const base64 = Buffer.from(await res.arrayBuffer()).toString("base64");
+	const base64 = toBase64(new Uint8Array(await res.arrayBuffer()));
 
 	return {
 		size: coverSize,

@@ -159,6 +159,29 @@ interface MusicTrack {
 
 `cover.url` is the full cover, linked rather than inlined to keep your bundle small. To serve it in modern formats and sizes, pass it to your framework's image pipeline. For example, Astro's `<Image>` with `image.domains: ["lastfm.freetls.fastly.net"]`. Otherwise, allow the domain in your CSP `img-src`.
 
+## Live updates
+
+The plugin bakes the track into the build. To update it while the page is open, run the same lookup on a server or edge worker with `ausculto/runtime`, and poll that from the page. It only needs `fetch` and `btoa`, so it works in Cloudflare Workers, Deno, Bun and Node:
+
+```ts
+import { fetchMusicTrack, type MusicTrack } from "ausculto/runtime";
+
+let previous: MusicTrack | null = null;
+
+export default {
+	async fetch(_request: Request, env: { LASTFM_KEY: string; LASTFM_USER: string }) {
+		// Still on the same song: links and cover are reused, only Last.fm is asked.
+		previous = await fetchMusicTrack(
+			{ apiKey: env.LASTFM_KEY, userId: env.LASTFM_USER },
+			{ previous, warn: console.warn }
+		);
+		return Response.json(previous, { headers: { "Cache-Control": "public, max-age=20" } });
+	}
+};
+```
+
+It takes the plugin's options (`cacheTTL` is ignored: cache the response instead) and throws when Last.fm fails, so keep the Last.fm key on the server and put an HTTP cache in front of it.
+
 ## Options
 
 | Option          | Type                                           | Default                                  | Description                                                       |

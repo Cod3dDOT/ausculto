@@ -52,13 +52,21 @@ async function getStreamingServices(
 	return services;
 }
 
+/** Whether two scrobbles are the same song, so its links and cover can be reused. */
+export const sameSong = (a: TrackQuery, b: TrackQuery): boolean =>
+	a.title === b.title && a.artist === b.artist && a.album === b.album;
+
 /**
  * Fetches the last track of the user with its cover and streaming links.
  * Throws when Last.fm fails; returns `null` when the user has no scrobbles.
+ *
+ * When the scrobble is the same song as `previous`, its links and cover are reused: only Last.fm
+ * is asked, which keeps polling cheap.
  */
 export async function fetchMusicTrack(
 	options: ResolvedOptions,
-	warn: Warn
+	warn: Warn,
+	previous: MusicTrack | null = null
 ): Promise<MusicTrack | null> {
 	const fetchOptions = { timeout: options.timeout };
 	const track = await getLastTrack(options.apiKey, options.userId, fetchOptions);
@@ -67,13 +75,16 @@ export async function fetchMusicTrack(
 		return null;
 	}
 
-	const [services, cover] = await Promise.all([
-		getStreamingServices(track, options.providers, fetchOptions, warn),
-		getCover(track.imageUrl, options).catch((error: unknown) => {
-			warn(`cover failed: ${reason(error)}`);
-			return null;
-		})
-	]);
+	const reused = previous && sameSong(previous, track) ? previous : null;
+	const [services, cover] = reused
+		? [reused.services, reused.cover]
+		: await Promise.all([
+				getStreamingServices(track, options.providers, fetchOptions, warn),
+				getCover(track.imageUrl, options).catch((error: unknown) => {
+					warn(`cover failed: ${reason(error)}`);
+					return null;
+				})
+			]);
 
 	return {
 		album: track.album,

@@ -12,7 +12,8 @@ import { fetchJson } from "../src/api/fetch.ts";
 import { getLastTrack } from "../src/api/lastfm/index.ts";
 import { listenbrainzStreamingServices } from "../src/api/listenbrainz/index.ts";
 import { eIdToService, openwhydStreamingServices } from "../src/api/openwhyd/index.ts";
-import { getCover } from "../src/util/cover.ts";
+import { fetchMusicTrack } from "../src/runtime.ts";
+import { getCover, toBase64 } from "../src/util/cover.ts";
 import { looselyMatches, normalize } from "../src/util/match.ts";
 
 const OPTIONS = { timeout: 1000 };
@@ -217,5 +218,83 @@ describe("match", () => {
 		expect(looselyMatches("Karma Police - Remastered 2011", "karma police")).toBe(true);
 		expect(looselyMatches("Karma Police", "Paranoid Android")).toBe(false);
 		expect(looselyMatches("", "anything")).toBe(false);
+	});
+});
+
+const RUNTIME_OPTIONS = { apiKey: "key", providers: ["deezer" as const], userId: "user" };
+
+/** Last.fm answers with `name` by `Radiohead`; Deezer and the cover CDN with fixed data. */
+function mockServices(name: () => string) {
+	const urls: string[] = [];
+	spyOn(globalThis, "fetch").mockImplementation((async (input: URL | string) => {
+		const url = String(input);
+		urls.push(url);
+		if (url.includes("audioscrobbler")) {
+			return Response.json({
+				recenttracks: {
+					track: [
+						{
+							"@attr": { nowplaying: "true" },
+							album: { "#text": "OK Computer" },
+							artist: { "#text": "Radiohead" },
+							image: [{ "#text": "https://lastfm.freetls.fastly.net/i/u/34s/abc123.jpg" }],
+							name: name(),
+							url: "https://www.last.fm/music/Radiohead"
+						}
+					]
+				}
+			});
+		}
+		if (url.includes("deezer")) {
+			return Response.json({
+				data: [{ artist: { name: "Radiohead" }, link: "https://deezer.com/1", title: name() }]
+			});
+		}
+		return new Response(new Uint8Array([1, 2, 3]));
+	}) as typeof fetch);
+	return urls;
+}
+
+// Here rather than in their own file: plugin.test.ts mocks src/api/index.ts for the whole process.
+describe("fetchMusicTrack (runtime)", () => {
+	it("builds the track like the plugin", async () => {
+		mockServices(() => "Karma Police");
+		const track = await fetchMusicTrack(RUNTIME_OPTIONS);
+		expect(track).toMatchObject({
+			artist: "Radiohead",
+			cover: { thumbnail: "data:image/webp;base64,AQID" },
+			nowPlaying: true,
+			services: { deezer: "https://deezer.com/1" },
+			title: "Karma Police"
+		});
+	});
+
+	it("only asks Last.fm while the song is unchanged", async () => {
+		let name = "Karma Police";
+		const urls = mockServices(() => name);
+		const first = await fetchMusicTrack(RUNTIME_OPTIONS);
+		urls.length = 0;
+
+		const same = await fetchMusicTrack(RUNTIME_OPTIONS, { previous: first });
+		expect(urls.every((url) => url.includes("audioscrobbler"))).toBe(true);
+		expect(same).toEqual(first);
+
+		name = "Airbag";
+		urls.length = 0;
+		const next = await fetchMusicTrack(RUNTIME_OPTIONS, { previous: first });
+		expect(urls.some((url) => url.includes("deezer"))).toBe(true);
+		expect(next?.title).toBe("Airbag");
+	});
+
+	it("validates options", () => {
+		expect(() => fetchMusicTrack({ apiKey: "", userId: "user" })).toThrow();
+	});
+});
+
+describe("toBase64", () => {
+	it("matches Buffer, also past one chunk", () => {
+		const bytes = Uint8Array.from({ length: 70_000 }, (_, i) => (i * 31) % 256);
+		expect(toBase64(bytes)).toBe(Buffer.from(bytes).toString("base64"));
+		expect(toBase64(new Uint8Array())).toBe("");
 	});
 });
