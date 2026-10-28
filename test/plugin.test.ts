@@ -101,7 +101,7 @@ describe("createPlugin", () => {
 					apiKey: "testkey",
 					cacheTTL: 300_000,
 					coverSize: 300,
-					providers: ["listenbrainz", "deezer", "openwhyd"],
+					providers: ["listenbrainz", "itunes", "deezer", "openwhyd"],
 					thumbnailSize: 64,
 					timeout: 10_000,
 					userId: "testuser"

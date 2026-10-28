@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-export type StreamingServiceProvider = "listenbrainz" | "deezer" | "openwhyd";
+export type StreamingServiceProvider = "listenbrainz" | "itunes" | "deezer" | "openwhyd";
 
 export interface StreamingServices {
 	spotify?: string;
@@ -55,7 +55,7 @@ export interface LastFmPluginOptions {
 	apiKey: string;
 	/**
 	 * Providers to query for streaming links. Earlier providers win when two find the same service.
-	 * @default ["listenbrainz", "deezer", "openwhyd"]
+	 * @default ["listenbrainz", "itunes", "deezer", "openwhyd"]
 	 */
 	providers?: StreamingServiceProvider[];
 	/**

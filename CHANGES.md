@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-28
+
+### Added
+
+- `itunes` provider: Apple Music links from the iTunes Search API, no key needed. In the default `providers`, after `listenbrainz`. It accepts co-credited artists (a scrobble by "Hwungii" matches "Hwungii & DJ VGK1"; also `,`, `feat.`, `ft.`, `x`) and prefers the exact title over one that only contains it, so "Song (Slowed)" does not link "Song"
+
 ## [0.2.0] - 2026-10-27
 
 ### Added
@@ -38,3 +44,7 @@ First release. The project was previously developed, but never released, as `rol
 - `musicTrack` can be `null`: when Last.fm fails, the build continues and uses the previous track if there is one
 - The `musicbrainz` provider is now `listenbrainz`, and `odesli` is gone: its public API was retired on 2026-07-31
 - `sharp` is no longer a dependency
+
+[0.3.0]: https://github.com/Cod3dDOT/ausculto/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/Cod3dDOT/ausculto/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/Cod3dDOT/ausculto/releases/tag/v0.1.0

@@ -27,6 +27,7 @@ Fetches the track you are playing (or played last), its cover art and links to i
 |              | Spotify | Apple Music | Deezer | YouTube | SoundCloud | Bandcamp |
 | ------------ | ------- | ----------- | ------ | ------- | ---------- | -------- |
 | ListenBrainz | ✓       | ✓           | –      | –       | –          | –        |
+| iTunes       | –       | ✓           | –      | –       | –          | –        |
 | Deezer       | –       | –           | ✓      | –       | –          | –        |
 | Openwhyd *   | ✓       | –           | ✓      | ✓       | ✓          | ✓        |
 
@@ -184,15 +185,15 @@ It takes the plugin's options (`cacheTTL` is ignored: cache the response instead
 
 ## Options
 
-| Option          | Type                                           | Default                                  | Description                                                       |
-| --------------- | ---------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------- |
-| `userId`        | `string`                                       | required                                 | Last.fm username                                                  |
-| `apiKey`        | `string`                                       | required                                 | Last.fm API key                                                   |
-| `providers`     | `("listenbrainz" \| "deezer" \| "openwhyd")[]` | `["listenbrainz", "deezer", "openwhyd"]` | Services to find streaming links with                             |
-| `thumbnailSize` | `34 \| 64 \| 174`                              | `64`                                     | Edge of `cover.thumbnail`, in pixels                              |
-| `coverSize`     | `300 \| 770`                                   | `300`                                    | Edge of `cover.url`, in pixels (770 is the largest Last.fm keeps) |
-| `cacheTTL`      | `number`                                       | `300_000`                                | How long a fetched track is reused, in ms                         |
-| `timeout`       | `number`                                       | `10_000`                                 | Timeout of each HTTP request, in ms                               |
+| Option          | Type                                                       | Default                                            | Description                                                       |
+| --------------- | ---------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------- |
+| `userId`        | `string`                                                   | required                                           | Last.fm username                                                  |
+| `apiKey`        | `string`                                                   | required                                           | Last.fm API key                                                   |
+| `providers`     | `("listenbrainz" \| "itunes" \| "deezer" \| "openwhyd")[]` | `["listenbrainz", "itunes", "deezer", "openwhyd"]` | Services to find streaming links with                             |
+| `thumbnailSize` | `34 \| 64 \| 174`                                          | `64`                                               | Edge of `cover.thumbnail`, in pixels                              |
+| `coverSize`     | `300 \| 770`                                               | `300`                                              | Edge of `cover.url`, in pixels (770 is the largest Last.fm keeps) |
+| `cacheTTL`      | `number`                                                   | `300_000`                                          | How long a fetched track is reused, in ms                         |
+| `timeout`       | `number`                                                   | `10_000`                                           | Timeout of each HTTP request, in ms                               |
 
 ## License
 

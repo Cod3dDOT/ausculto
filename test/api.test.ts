@@ -9,12 +9,13 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { deezerStreamingServices } from "../src/api/deezer/index.ts";
 import { fetchJson } from "../src/api/fetch.ts";
+import { itunesStreamingServices } from "../src/api/itunes/index.ts";
 import { getLastTrack } from "../src/api/lastfm/index.ts";
 import { listenbrainzStreamingServices } from "../src/api/listenbrainz/index.ts";
 import { eIdToService, openwhydStreamingServices } from "../src/api/openwhyd/index.ts";
 import { fetchMusicTrack } from "../src/runtime.ts";
 import { getCover, toBase64 } from "../src/util/cover.ts";
-import { looselyMatches, normalize } from "../src/util/match.ts";
+import { bestTitleMatch, looselyMatches, normalize, sameArtist } from "../src/util/match.ts";
 
 const OPTIONS = { timeout: 1000 };
 const QUERY = { album: "OK Computer", artist: "Radiohead", title: "Karma Police" };
@@ -177,6 +178,43 @@ describe("deezer", () => {
 	});
 });
 
+describe("itunes", () => {
+	const song = (artistName: string, trackName: string, trackId: number) => ({
+		artistName,
+		trackId,
+		trackName
+	});
+
+	it("links the same title by the same artist, co-credits allowed", async () => {
+		const { urls } = mockFetch(() => ({
+			results: [
+				song("Radiohead Tribute", "Karma Police", 1),
+				song("Radiohead & Friends", "Karma Police (Live)", 2),
+				song("Radiohead & Friends", "Karma Police", 3)
+			]
+		}));
+		expect(await itunesStreamingServices(QUERY, OPTIONS)).toEqual({
+			apple: "https://music.apple.com/song/3"
+		});
+		const url = new URL(urls[0] ?? "");
+		expect(url.origin + url.pathname).toBe("https://itunes.apple.com/search");
+		expect(url.searchParams.get("term")).toBe("Radiohead Karma Police");
+		expect(url.searchParams.get("entity")).toBe("song");
+	});
+
+	it("falls back to a loose title match", async () => {
+		mockFetch(() => ({ results: [song("Radiohead", "Karma Police (Remastered)", 4)] }));
+		expect(await itunesStreamingServices(QUERY, OPTIONS)).toEqual({
+			apple: "https://music.apple.com/song/4"
+		});
+	});
+
+	it("returns nothing without a match", async () => {
+		mockFetch(() => ({ results: [song("Other", "Karma Police", 5)] }));
+		expect(await itunesStreamingServices(QUERY, OPTIONS)).toEqual({});
+	});
+});
+
 describe("openwhyd", () => {
 	it("maps player IDs to links", () => {
 		expect(eIdToService("/yt/abc")).toEqual({ youtube: "https://www.youtube.com/watch?v=abc" });
@@ -218,6 +256,22 @@ describe("match", () => {
 		expect(looselyMatches("Karma Police - Remastered 2011", "karma police")).toBe(true);
 		expect(looselyMatches("Karma Police", "Paranoid Android")).toBe(false);
 		expect(looselyMatches("", "anything")).toBe(false);
+	});
+
+	it("matches artists sharing a credit", () => {
+		expect(sameArtist("Hwungii & DJ VGK1", "Hwungii")).toBe(true);
+		expect(sameArtist("Daft Punk feat. Pharrell Williams", "pharrell williams")).toBe(true);
+		expect(sameArtist("Sxilwix x Hwungii", "Hwungii, 0hex")).toBe(true);
+		expect(sameArtist("Radiohead Tribute", "Radiohead")).toBe(false);
+		expect(sameArtist("Xavier", "Xavier Rudd")).toBe(false);
+	});
+
+	it("prefers the exact title over a loose match", () => {
+		const titles = ["VOCE NA MIRA", "VOCE NA MIRA (Super Slowed)", "VOCE NA MIRA (Slowed)"];
+		const pick = (title: string) => bestTitleMatch(titles, (t) => t, title);
+		expect(pick("Voce na Mira (Slowed)")).toBe("VOCE NA MIRA (Slowed)");
+		expect(pick("VOCE NA MIRA - Remastered")).toBe("VOCE NA MIRA");
+		expect(pick("Other")).toBeUndefined();
 	});
 });
 

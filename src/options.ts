@@ -6,7 +6,12 @@
 
 import type { LastFmPluginOptions, ResolvedOptions, StreamingServiceProvider } from "@/types.ts";
 
-const ALL_PROVIDERS: readonly StreamingServiceProvider[] = ["listenbrainz", "deezer", "openwhyd"];
+const ALL_PROVIDERS: readonly StreamingServiceProvider[] = [
+	"listenbrainz",
+	"itunes",
+	"deezer",
+	"openwhyd"
+];
 const THUMBNAIL_SIZES: readonly number[] = [34, 64, 174];
 const COVER_SIZES: readonly number[] = [300, 770];
 

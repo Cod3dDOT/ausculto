@@ -6,6 +6,7 @@
 
 import { deezerStreamingServices } from "@/api/deezer/index.ts";
 import type { FetchOptions } from "@/api/fetch.ts";
+import { itunesStreamingServices } from "@/api/itunes/index.ts";
 import { getLastTrack } from "@/api/lastfm/index.ts";
 import { listenbrainzStreamingServices } from "@/api/listenbrainz/index.ts";
 import { openwhydStreamingServices } from "@/api/openwhyd/index.ts";
@@ -22,6 +23,7 @@ type Provider = (track: TrackQuery, options: FetchOptions) => Promise<StreamingS
 
 const PROVIDERS: Record<StreamingServiceProvider, Provider> = {
 	deezer: deezerStreamingServices,
+	itunes: itunesStreamingServices,
 	listenbrainz: listenbrainzStreamingServices,
 	openwhyd: openwhydStreamingServices
 };
